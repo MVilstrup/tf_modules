@@ -5,9 +5,9 @@ from tensorflow.python.platform import tf_logging as logging
 slim = tf.contrib.slim
 import time
 
-from extensions.utils import *
-from extensions.models.base_model import BaseModel
-from extensions.assertions.checks import (tfTensor, existingStr, tfVariable)
+from tf_modules.utils import *
+from tf_modules.models.base_model import BaseModel
+from tf_modules.assertions.checks import *
 
 class TrainableModelMeta(type):
         def __call__(cls, *args, **kwargs):
@@ -34,7 +34,7 @@ class TrainableModel(resolve(BaseModel, AddMeta)):
     def _train(self):
         raise ValueError("_train() function should be created when inheriting TrainableModel")
 
-    def _metric_step(self, sess, feed_dict, is_training, is_testing=False):
+    def _metric_step(self, sess, step, feed_dict, is_training, is_testing=False):
         msg = """
         _metric_step(sess, feed_dict, is_training, is_testing=False)
         Should be created when inheriting TrainableModel
@@ -49,13 +49,18 @@ class TrainableModel(resolve(BaseModel, AddMeta)):
 
     def _trainable_assertions(self):
         # List the assertions for the configuration
-        assertions = {"is_training": tfTensor,
+        assertions = {"is_training": tensorOrBool,
                       "log_dir": existingStr,
                       "global_step": tfVariable}
         self.config.assertions(assertions)
 
-    def step(self, sess, feed_dict):
-        training = sess.run(self.config.is_training, feed_dict=feed_dict)
+    def step(self, sess, feed_dict, is_training=None):
+        if is_training is not None:
+            training = is_training
+        elif tfTensor(self.config.is_training):
+            training = sess.run(self.config.is_training, feed_dict=feed_dict)
+        else:
+            training = self.config.is_training
 
         if training:
             self._train_step(sess, feed_dict)
@@ -63,9 +68,7 @@ class TrainableModel(resolve(BaseModel, AddMeta)):
             self._evaluate_step(sess, feed_dict)
 
     def _train_step(self, sess, feed_dict):
-        #start = time.clock()
         _ , step = sess.run([self._train(), self.config.global_step], feed_dict=feed_dict)
-        #feed_dict.update({self.batch_time: time.clock() - start})
 
         # Every fifth step we make summaries
         if step % 5 == 0:

@@ -7,8 +7,8 @@ try:
 except:
     missing_psutil = True
 
-from extensions.utils import *
-from extensions.assertions.checks import *
+from tf_modules.utils import *
+from tf_modules.assertions.checks import *
 from collections import defaultdict
 from subprocess import PIPE, Popen
 import os
@@ -172,7 +172,9 @@ class HardwareMetrics(object):
             self.ops['time']['left'] = time_left
 
 
-    def step(self, sess, step):
+    def step(self, sess):
+        step = sess.run(self.config.global_step)
+
         feed_dict = {}
 
         if self.batch_times:

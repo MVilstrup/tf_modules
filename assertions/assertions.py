@@ -1,6 +1,6 @@
 
 import inspect
-from extensions.assertions.checks import (tupleList)
+from tf_modules.assertions.checks import (tupleList)
 
 class AssertionClass(object):
     def __init__(self):
@@ -10,16 +10,17 @@ class AssertionClass(object):
         return inspect.getsource(_assert).strip()
 
     def assertions(self, _assertions):
-
         msg = "Assertions should either be list of tuples or dict"
         assert isinstance(_assertions, dict) or isinstance(_assertions, list), msg
 
+
+        tests = []
         if isinstance(_assertions, dict):
             for attr, _assert in _assertions.items():
                 self.assertion((attr, _assert))
         else:
             assert(tupleList(_assertions)), msg
-            map(self.assertion, assertions)
+            map(self.assertion, _assertions)
 
     def assertion(self, _assertion):
 

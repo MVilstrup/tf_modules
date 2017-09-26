@@ -4,13 +4,16 @@ import tensorflow as tf
 import os
 import subprocess
 import signal
-from extensions.metrics.hardware_metrics import HardwareMetrics
+from tf_modules.metrics.hardware_metrics import HardwareMetrics
 import time
 
 class Trainer:
 
-    def __init__(self, config, run_tensorboard=True, hardware=True, port=6006):
+    def __init__(self, config, run_tensorboard=True, hardware=True, reset_log=False, port=6006):
         self.config = config
+
+        if reset_log:
+            self.config.clear_log()
 
         self.port = port
         self.current_epoch = 0
@@ -24,12 +27,13 @@ class Trainer:
         self.config.reset_tf_variables()
 
         if self.hardware:
-            self.metrics = HardwareMetrics(self.config)
+            self.hardware_metrics = HardwareMetrics(self.config)
 
         if self.run_tensorboard:
+            command = "tensorboard --logdir={} --port={}".format(os.path.abspath(self.config.log_dir), self.port)
+
             # Start tensorboard
-            command_list = ['tensorboard', '--logdir', self.config.log_dir]
-            self.tensorboard = subprocess.Popen(command_list,
+            self.tensorboard = subprocess.Popen(command,
                                                 stdout=subprocess.PIPE,
                                                 shell=True,
                                                 preexec_fn=os.setsid)
@@ -66,7 +70,7 @@ class Trainer:
             self.session.close()
 
     def epochs(self):
-        for i in range(self.config.num_epochs):
+        for i in range(self.config.epoch_amount):
             self.current_epoch += 1
             yield i
 
@@ -74,7 +78,7 @@ class Trainer:
         for i in range(self.config.total_batches):
             if hasattr(self, 'metrics'):
                 if hasattr(self, 'start'):
-                    self.metrics.add_batch_time(time.clock() - self.start)
+                    self.hardware_metrics.add_batch_time(time.clock() - self.start)
                     self.start = time.clock()
                 else:
                     self.start = time.clock()
@@ -95,8 +99,8 @@ class Trainer:
         validate = step % self.config.evaluate_at == 0
 
         # If it is time to validate we also meassure the hardware performance
-        if hasattr(self, 'metrics') and validate:
-            self.metrics.step(self.session, step)
+        if hasattr(self, 'hardware_metrics') and validate:
+            self.hardware_metrics.step(self.session)
 
         return validate
 

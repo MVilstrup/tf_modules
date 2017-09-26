@@ -1,7 +1,7 @@
 import tensorflow as tf
-from extensions.assertions.checks import *
+from tf_modules.assertions.checks import *
 
-from extensions.models import BaseModel
+from tf_modules.models import BaseModel
 import numpy as np
 
 class VGG19(BaseModel):

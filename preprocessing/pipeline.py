@@ -1,4 +1,4 @@
-from extensions.assertions.checks import *
+from tf_modules.assertions.checks import *
 from collections import defaultdict
 
 class Pipeline(object):

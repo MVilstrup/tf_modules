@@ -5,12 +5,12 @@ from tensorflow.contrib.framework.python.ops.variables import get_or_create_glob
 
 import multiprocessing as mp
 import shutil
-import copy
 import inspect
 
-from extensions.utils import *
-from extensions.assertions.assertions import AssertionClass
+from tf_modules.utils import *
+from tf_modules.assertions.assertions import AssertionClass
 from random import randint
+import os
 
 class Config(AssertionClass):
 
@@ -19,12 +19,12 @@ class Config(AssertionClass):
                  num_classes,
                  batch_size,
                  epoch_amount,
-                 num_checkpoints,
+                 num_checkpoints=0,
                  log_dir=None,
                  save_folder=None):
         AssertionClass.__init__(self)
 
-        self.name = name
+        self.model_name = name
         self.graph = tf.get_default_graph()
         self.global_step = get_or_create_global_step()
         self.is_training = tf.placeholder(tf.bool)
@@ -38,15 +38,17 @@ class Config(AssertionClass):
         self.log_dir = log_dir
         self.save_folder = save_folder
         self.save_path = "{}{}.ckpt".format(save_folder, name)
+        tf.reset_default_graph()
 
-    def add_data_files(self, train_files=[], validation_files=[], test_files=[]):
-        self.train_files = train_files
-        self.validation_files = validation_files
-        self.test_files = test_files
 
-        self.train_steps      = int(len(train_files) / self.batch_size) if self.batch_size > 0 else 0
-        self.validation_steps = int(len(validation_files) / self.batch_size) if self.batch_size > 0 else 0
-        self.test_steps       = int(len(test_files) / self.batch_size) if self.batch_size > 0 else 0
+    def add_data(self, train_data=[], validation_data=[], test_data=[]):
+        self.train_data = train_data
+        self.validation_data = validation_data
+        self.test_data = test_data
+
+        self.train_steps      = int(len(train_data) / self.batch_size) if self.batch_size > 0 else 0
+        self.validation_steps = int(len(validation_data) / self.batch_size) if self.batch_size > 0 else 0
+        self.test_steps       = int(len(test_data) / self.batch_size) if self.batch_size > 0 else 0
 
         self.total_batches = self.train_steps * self.epoch_amount
 
@@ -99,7 +101,7 @@ class Config(AssertionClass):
 
     def _reset_learning_rate(self):
         if not hasattr(self, "lr_type"):
-            raise ValueError("Learning rate not set")
+            return
 
         if self.lr_type == "exponential":
             self.learning_rate = tf.train.exponential_decay(self.initial_learning_rate,
@@ -121,22 +123,24 @@ class Config(AssertionClass):
     def reset_tf_variables(self):
         if hasattr(self, "graph"):
             del self.graph
+        self.graph = tf.get_default_graph()
+
         if hasattr(self, "global_step"):
             del self.global_step
-        if hasattr(self, "learning_rate"):
-            del self.learning_rate
-        if hasattr(self, "is_training"):
-            del self.is_training
+        self.global_step = get_or_create_global_step()
 
-        self.graph = tf.get_default_graph()
+        if hasattr(self, "learning_rate") and not isinstance(self.learning_rate, float):
+            del self.learning_rate
+        self._reset_learning_rate()
+
+        if hasattr(self, "is_training") and not isinstance(self.is_training, bool):
+            del self.is_training
+            self.is_training = tf.placeholder(tf.bool)
 
         if not hasattr(self, "random_seed"):
             self.random_seed = randint(0, 999)
 
         tf.set_random_seed(self.random_seed)
-        self.global_step = get_or_create_global_step()
-        self._reset_learning_rate()
-        self.is_training = tf.placeholder(tf.bool)
 
 
     def set_exponential_learning_rate(self, initial_learning_rate, decay_times, decay_rate, staircase=False):
@@ -168,8 +172,8 @@ class Config(AssertionClass):
         self.learning_rate = learning_rate
 
     def set_name(self, name):
-        self.name = name
-        self.save_path = "{}{}".format(self.save_folder, self.name)
+        self.model_name = name
+        self.save_path = "{}{}".format(self.save_folder, self.model_name)
 
 
     def clean_files(self):

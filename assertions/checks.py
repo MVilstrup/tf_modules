@@ -14,6 +14,7 @@ tfTensor = lambda x: isinstance(x, tf.Tensor)
 tfGraph = lambda x: isinstance(x, tf.Graph)
 
 optionalTensor = lambda x: x is None or isinstance(x, tf.Tensor)
+tensorOrBool = lambda x: tfTensor(x) or boolean(x)
 optionalStr = lambda x: x is None or isinstance(x, str)
 
 floatOrTensor = lambda x: positiveFloat(x) or isinstance(x, tf.Tensor)

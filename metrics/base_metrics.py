@@ -1,13 +1,12 @@
-
 import tensorflow as tf
 from tensorflow.python.platform import tf_logging as logging
 import time
 
-from extensions.utils import *
-from extensions.assertions.checks import *
+from tf_modules.utils import *
+from tf_modules.assertions.checks import *
+
 
 class BaseMetrics(object):
-
     def __init__(self, config):
         self.config = config
 
@@ -30,6 +29,17 @@ class BaseMetrics(object):
         # Ensure the config is as expected
         self._base_assertions()
         self._config_assertions()
+
+    def trace(self, sess, step, feed_dict, train_op):
+        if hasattr(self, "train_writer"):
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
+            summaries, _ = sess.run([self.train_summary, train_op],
+                                    feed_dict=feed_dict,
+                                    options=run_options,
+                                    run_metadata=run_metadata)
+            self.train_writer.add_run_metadata(run_metadata, 'step%d' % step)
+            self.train_writer.add_summary(summaries, step)
 
     def step(self, sess, step, feed_dict, is_training=True, is_testing=False):
         if not hasattr(self, "train_summary"):
@@ -73,9 +83,9 @@ class BaseMetrics(object):
             if c in self.ops:
                 self.ops[c].append(tensor)
                 found = True
+
         if not found:
-            msg = "{} is not a valid scope, only 'train', 'test' and 'validation' is allowed".format(scope)
-            raise ValueError(msg)
+            raise ValueError("Only scopes allowed are: 'train', 'test' and 'validation'")
 
         tf.summary.scalar(name, tensor, collections=collections)
 
@@ -90,10 +100,7 @@ class BaseMetrics(object):
             self.ops[c].append(op)
 
     def _create_writer(self, scope, graph=None):
-        return tf.summary.FileWriter('{}/{}_{}'.format(self.config.log_dir,
-                                                        scope,
-                                                        self.config.name),
-                                                        graph)
+        return tf.summary.FileWriter('{}/{}_{}'.format(self.config.log_dir, scope, self.config.model_name), graph)
 
     def __add__(self, other):
         if not isinstance(other, BaseMetrics):
@@ -110,6 +117,6 @@ class BaseMetrics(object):
 
     def _base_assertions(self):
         assertions = {"log_dir": existingStr,
-                      "name": existingStr,
+                      "model_name": existingStr,
                       "graph": tfGraph}
         self.config.assertions(assertions)

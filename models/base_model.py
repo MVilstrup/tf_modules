@@ -2,14 +2,15 @@
 
 import tensorflow as tf
 
-from tensorflow.python.platform import tf_logging as logging
 slim = tf.contrib.slim
-import time
 
-from extensions.utils import *
-from extensions.assertions.checks import (optionalStr,
+from tf_modules.utils import *
+from tf_modules.assertions.checks import (optionalStr,
                                          optionalTensor,
                                          tfVariable)
+
+
+
 
 class BaseModelMeta(type):
     def __call__(cls, *args, **kwargs):
@@ -79,12 +80,12 @@ class BaseModel(metaclass=BaseModelMeta):
         mkpath(self.config.save_path)
         #step = sess.run(self.config.global_step)
         save_path = saver.save(sess, self.config.save_path)
-        print("{} saved in file: {}".format(self.config.name, self.config.save_path))
+        print("{} saved in file: {}".format(self.config.model_name, self.config.save_path))
 
     def load(self, sess):
         saver = tf.train.Saver()
         saver.restore(sess,  self.config.checkpoint_name)
-        print("{} loaded from file: {}".format(self.config.name, self.config.checkpoint_name))
+        print("{} loaded from file: {}".format(self.config.model_name, self.config.checkpoint_name))
 
     def visualize(self):
         with tf.Session(graph=self.config.graph) as sess:

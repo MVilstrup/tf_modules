@@ -2,8 +2,8 @@
 
 import tensorflow as tf
 import multiprocessing as mp
-import preprocessing
-from extensions.assertions.checks import *
+#import preprocessing
+from tf_modules.assertions.checks import *
 
 class ClassificationPipeline:
 
@@ -67,10 +67,10 @@ class ClassificationPipeline:
             image = tf.image.decode_jpeg(image_file, channels=self.config.channels)
 
             #Perform the correct preprocessing for this image depending if it is training or evaluating
-            image = preprocessing.preprocess_image(image,
-                                                   self.config.height,
-                                                   self.config.width,
-                                                   is_training)
+            #image = preprocessing.preprocess_image(image,
+            #                                       self.config.height,
+            #                                       self.config.width,
+            #                                       is_training)
 
             image = tf.reshape(image, (self.config.height,
                                        self.config.width,
