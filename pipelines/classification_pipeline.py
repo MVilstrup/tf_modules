@@ -67,14 +67,12 @@ class ClassificationPipeline:
             image = tf.image.decode_jpeg(image_file, channels=self.config.channels)
 
             #Perform the correct preprocessing for this image depending if it is training or evaluating
-            #image = preprocessing.preprocess_image(image,
-            #                                       self.config.height,
-            #                                       self.config.width,
-            #                                       is_training)
+            if is_training:
+                image = tf.image.random_flip_up_down(image)
+                image = tf.image.random_flip_left_right(image)
+                image = tf.image.random_brightness(image, max_delta=32. / 255.)
 
-            image = tf.reshape(image, (self.config.height,
-                                       self.config.width,
-                                       self.config.channels))
+            image = tf.image.resize_images(image, [self.config.height, self.config.width])
 
             # Take each image into a mini-batch
             min_queue_size = int(16 * batch_size)

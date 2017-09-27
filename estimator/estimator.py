@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import tensorflow as tf
-from tensorflow.estimator import ModeKeys
+#from tensorflow.estimator import ModeKeys
 
 from tf_modules.utils import *
 from tf_modules.assertions.checks import (optionalStr,
@@ -9,7 +9,7 @@ from tf_modules.assertions.checks import (optionalStr,
                                          tfVariable)
 
 
-class Modes(ModeKeys):
+class Modes(object):
   """Standard names for model modes.
   The following standard keys are defined:
   * `TRAIN`: training mode.
@@ -17,6 +17,9 @@ class Modes(ModeKeys):
   * `PREDICT`: inference mode.
   * `EXTEND`: Extensions mode.
   """
+  TRAIN = 'train'
+  EVAL = 'eval'
+  PREDICT = 'pred'
   EXTEND = 'extend'
 
 

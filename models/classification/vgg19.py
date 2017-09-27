@@ -12,7 +12,7 @@ class VGG19(BaseModel):
         if config.use_initial_weights:
             self.data_dict = np.load(config.weight_file, encoding='latin1').item()
         else:
-            self.data_dict = None
+            self.data_dict = {}
 
         self.var_dict = {}
         self.trainable = []
