@@ -158,32 +158,36 @@ class HardwareMetrics(object):
             self.ops['cpu']['cpu_usage'] = cpu_usage
             self.ops['cpu']['memory_usage'] = memory_usage
 
-    def add_batch_time(self, batch_time):
-        self.batch_times.append(batch_time)
-
     def initialize_time_metrics(self):
         with tf.name_scope('X-Metrics---TIME'):
             batch_time = tf.Variable(0, dtype=tf.float32, trainable=False)
             time_left = tf.Variable(0, dtype=tf.float32, trainable=False)
-            tf.summary.scalar('Seconds_Pr_Batch', batch_time, collections=self.collection)
+            tf.summary.scalar('items_pr_second', batch_time, collections=self.collection)
             tf.summary.scalar('Hours_Left', time_left, collections=self.collection)
 
-            self.ops['time']['batch'] = batch_time
+            self.ops['time']['item'] = batch_time
             self.ops['time']['left'] = time_left
 
 
     def step(self, sess):
         step = sess.run(self.config.global_step)
-
         feed_dict = {}
 
-        if self.batch_times:
-            mean = np.array(self.batch_times).mean()
-            time_left = (self.config.total_batches - step) * mean
+        if hasattr(self, 'start'):
+            seconds = time.clock() - self.start
+            batches_per_second = (step - self.last_step) / seconds
 
-            feed_dict[self.ops['time']['batch']] = mean
+            items_pr_second = batches_per_second / self.config.batch_size
+            feed_dict[self.ops['time']['item']] = items_pr_second
+
+            time_left = (self.config.total_batches - step) * batches_per_second
             feed_dict[self.ops['time']['left']] = time_left / 60 / 60
-            self.batch_times = []
+
+            self.start = time.clock()
+            self.last_step = step
+        else:
+            self.start = time.clock()
+            self.last_step = step
 
         try:
             for gpu in self.gpu_queue.pop():

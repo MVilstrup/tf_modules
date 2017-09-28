@@ -19,7 +19,7 @@ class ClassificationPipeline:
 
         # Define Training Pipeline
         preprocess_treads = max(2, int(mp.cpu_count() / 2))
-        self.train_images, self.train_labels = self._pipeline(config.train_files,
+        self.train_images, self.train_labels = self._pipeline(config.train_data,
                                                               config.num_classes,
                                                               config.batch_size,
                                                               preprocess_treads,
@@ -29,7 +29,7 @@ class ClassificationPipeline:
 
         # Define Validation Pipeline
         preprocess_treads = min(2, max(1, int(mp.cpu_count() / 4)))
-        self.eval_images, self.eval_labels = self._pipeline(config.validation_files,
+        self.eval_images, self.eval_labels = self._pipeline(config.validation_data,
                                                             config.num_classes,
                                                             config.batch_size,
                                                             preprocess_treads,
@@ -101,8 +101,8 @@ class ClassificationPipeline:
         # List assertions of the configuration
         assertions = {"batch_size": positiveInt,
                       "epoch_amount": positiveInt,
-                      "train_files": strList,
-                      "validation_files": strList,
+                      "train_data": strList,
+                      "validation_data": strList,
                       "num_classes": positiveInt,
                       "width": positiveInt,
                       "height": positiveInt,

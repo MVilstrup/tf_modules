@@ -18,9 +18,6 @@ class ClassificationMetrics(BaseMetrics):
 
 
         with tf.name_scope('Classification-Metrics'):
-            self.logits = predictions
-            self.on_hot = targets
-
             self.predictions = tf.argmax(predictions, 1)
             self.targets = tf.argmax(targets, 1)
 
@@ -29,9 +26,6 @@ class ClassificationMetrics(BaseMetrics):
 
         self.create_confusion_metrics()
         self.create_standard_metrics()
-
-        if top_five:
-            self.add_top_accuracy(5)
 
     def create_confusion_metrics(self):
         # Create a confusion matrix pr scope
@@ -61,10 +55,10 @@ class ClassificationMetrics(BaseMetrics):
     def reset(self):
         pass
 
-    def add_top_accuracy(self, k):
+    def add_top_accuracy(self, predictions, k):
         with tf.name_scope("Metric---Accuracy---Top-{}".format(k)):
             for scope in self.collections:
-                top_five = tf.nn.in_top_k(predictions=self.logits, targets=self.on_hot, k=k)
+                top_five = tf.nn.in_top_k(predictions=predictions, targets=self.targets, k=k)
                 top_accuracy, top_accuracy_up = tf.metrics.mean(top_five)
 
                 # Add mpk to TensorBoard.

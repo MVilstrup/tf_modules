@@ -76,13 +76,6 @@ class Trainer:
 
     def steps(self):
         for i in range(self.config.total_batches):
-            if hasattr(self, 'metrics'):
-                if hasattr(self, 'start'):
-                    self.hardware_metrics.add_batch_time(time.clock() - self.start)
-                    self.start = time.clock()
-                else:
-                    self.start = time.clock()
-
             if i > 0 and i % self.config.train_steps == 0:
                 self.current_epoch += 1
 
