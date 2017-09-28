@@ -12,10 +12,15 @@ from tf_modules.metrics.base_metrics import BaseMetrics
 
 
 class ClassificationMetrics(BaseMetrics):
-    def __init__(self, config, predictions, targets):
+    def __init__(self, config, predictions, targets, top_five=True):
         BaseMetrics.__init__(self, config)
 
+
+
         with tf.name_scope('Classification-Metrics'):
+            self.logits = predictions
+            self.on_hot = targets
+
             self.predictions = tf.argmax(predictions, 1)
             self.targets = tf.argmax(targets, 1)
 
@@ -24,6 +29,9 @@ class ClassificationMetrics(BaseMetrics):
 
         self.create_confusion_metrics()
         self.create_standard_metrics()
+
+        if top_five:
+            self.add_top_accuracy(5)
 
     def create_confusion_metrics(self):
         # Create a confusion matrix pr scope
@@ -36,7 +44,7 @@ class ClassificationMetrics(BaseMetrics):
                 # Create an accumulator variable to hold the counts
                 confusion = tf.Variable(tf.zeros([self.config.num_classes,
                                                   self.config.num_classes],
-                                        dtype=tf.int32),
+                                                 dtype=tf.int32),
                                         name='confusion')
 
                 # Create the update op for doing a "+=" accumulation on the batch
@@ -53,7 +61,19 @@ class ClassificationMetrics(BaseMetrics):
     def reset(self):
         pass
 
+    def add_top_accuracy(self, k):
+        with tf.name_scope("Metric---Accuracy---Top-{}".format(k)):
+            for scope in self.collections:
+                top_five = tf.nn.in_top_k(predictions=self.logits, targets=self.on_hot, k=k)
+                top_accuracy, top_accuracy_up = tf.metrics.mean(top_five)
+
+                # Add mpk to TensorBoard.
+                tf.summary.scalar(scope.title(), top_accuracy, collections=[scope])
+                tf.summary.histogram(scope.title(), top_accuracy, collections=[scope])
+                self.ops[scope].append(top_accuracy_up)
+
     def create_standard_metrics(self):
+
         with tf.name_scope("Metric---Accuracy"):
             for scope in self.collections:
                 # Calculate accuracy and error.
@@ -63,7 +83,7 @@ class ClassificationMetrics(BaseMetrics):
                 tf.summary.histogram(scope.title(), accuracy, collections=[scope])
                 self.ops[scope].append(accuracy_up)
 
-        with tf.name_scope("Metric---Mean-Per-Class-Accuracy"):
+        with tf.name_scope("Metric---Accuracy---Mean-Per-Class"):
             for scope in self.collections:
                 # Calculate accuracy and error.
                 mpk, mpk_up = tf.metrics.mean_per_class_accuracy(self.targets,
@@ -73,6 +93,7 @@ class ClassificationMetrics(BaseMetrics):
                 tf.summary.scalar(scope.title(), mpk, collections=[scope])
                 tf.summary.histogram(scope.title(), mpk, collections=[scope])
                 self.ops[scope].append(mpk_up)
+
 
     def _config_assertions(self):
         assertions = {"num_classes": positiveInt}
