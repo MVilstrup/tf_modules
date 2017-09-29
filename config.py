@@ -61,7 +61,6 @@ class Config(AssertionClass):
             os.mkdir(self.log_dir)
 
     def _attrs(self, max_length = 100):
-        _str = "Attributes:\n"
 
         tuples = []
         for attr, value in sorted(self.__dict__.items()):
@@ -75,8 +74,10 @@ class Config(AssertionClass):
                     value = '{} (size: {})'.format(type(value).__name__, pretty_num(len(value)))
                 if isinstance(value, int) or isinstance(value, float):
                     value = pretty_num(value)
-                _str += pretty("\t{}:".format(attr), 25) + "{}".format(value)
-        return _str
+
+                tuples.append((attr, value))
+
+        return tuples
 
     def _funcs(self):
         _str = "\n\nFunctions:\n"
@@ -95,7 +96,10 @@ class Config(AssertionClass):
         return self.__wrapped__.__weakref__
 
     def __str__(self):
-        _str = self._attrs()
+        _str = "Attributes:\n"
+        for attr, value in self._attrs():
+            _str += pretty("\t{}:".format(attr), 25) + "{}".format(value)
+
         _str += self._funcs()
         return _str
 
@@ -176,16 +180,8 @@ class Config(AssertionClass):
         self.save_path = "{}{}".format(self.save_folder, self.model_name)
 
 
-    def clean_files(self):
-        with mp.Pool(mp.cpu_count()) as pool:
-            print("Checking Training Files")
-            train_removed = pool.map(remove_if_bad, train_files)
-            print("Removed from Train", len([f for f in train_removed if not f]))
+    def log(self, sess):
+        tuples = self._attrs()
 
-            print("Checking Validation Files")
-            validation_removed = pool.map(remove_if_bad, validation_files)
-            print("Removed from Validation", len([f for f in validation_removed if not f]))
 
-            print("Checking Test Files")
-            test_removed = pool.map(remove_if_bad, test_files)
-            print("Removed from Test", len([f for f in test_removed if not f]))
+

@@ -190,3 +190,8 @@ def distorted_bounding_box_crop(image,
     # Crop the image to the specified bounding box.
     cropped_image = tf.slice(image, bbox_begin, bbox_size)
     return cropped_image, distort_bbox
+
+
+def gaussian_noise(image, std):
+    noise = tf.random_normal(shape=tf.shape(image), mean=0.0, stddev=std, dtype=tf.float32)
+    return image + noise
