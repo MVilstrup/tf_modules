@@ -17,19 +17,15 @@ class BaseModelMeta(type):
         error = lambda x,y,z: "The {} method should return {} not {}".format(x, y, z)
 
         instance = super().__call__(*args, **kwargs)
-        result = instance.trainable_layers()
-        assert(isinstance(result, set)), error("trainable_layers()",
-                                               "set of scope names",
-                                               type(result))
 
-        methods = [("targets()", instance.targets()),
-                   ("inputs()", instance.inputs()),
-                   ("predictions()", instance.predictions()),
-                   ("extension_layer()", instance.extension_layer())]
-        for name, result in methods:
-            assert(optionalTensor(result)), error(name,
-                                                  "a Tensor",
-                                                  type(result))
+        #methods = [("targets()", instance.targets()),
+        #           ("inputs()", instance.inputs()),
+        #           ("predictions()", instance.predictions()),
+        #           ("extension_layer()", instance.extension_layer())]
+        #for name, result in methods:
+        #    assert(optionalTensor(result)), error(name,
+        #                                          "a Tensor",
+        #                                          type(result))
 
         return instance
 

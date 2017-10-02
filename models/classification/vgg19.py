@@ -4,7 +4,7 @@ from tf_modules.assertions.checks import *
 from tf_modules.models import BaseModel
 import numpy as np
 
-class VGG19(BaseModel):
+class VGG19Old(BaseModel):
 
     def __init__(self, config, should_be_extended=False):
         BaseModel.__init__(self, config)
