@@ -9,24 +9,11 @@ from tf_modules.assertions.checks import (optionalStr,
                                          optionalTensor,
                                          tfVariable)
 
-
-
-
 class BaseModelMeta(type):
     def __call__(cls, *args, **kwargs):
         error = lambda x,y,z: "The {} method should return {} not {}".format(x, y, z)
 
         instance = super().__call__(*args, **kwargs)
-
-        #methods = [("targets()", instance.targets()),
-        #           ("inputs()", instance.inputs()),
-        #           ("predictions()", instance.predictions()),
-        #           ("extension_layer()", instance.extension_layer())]
-        #for name, result in methods:
-        #    assert(optionalTensor(result)), error(name,
-        #                                          "a Tensor",
-        #                                          type(result))
-
         return instance
 
 class BaseModel(metaclass=BaseModelMeta):
@@ -36,29 +23,6 @@ class BaseModel(metaclass=BaseModelMeta):
         self.config = config
         self._base_assertions()
         self._config_assertions()
-
-    def extension_layer(self):
-        output = """
-        extension_layer()-method should be created when inheriting BaseModel
-
-        Info: This is the next to final layer in the model. Typically it is the
-        layer just before the final layer called the "logits".
-
-        This method is used to make the model easier to extend.
-        """
-        raise ValueError(output)
-
-    def trainable_layers(self):
-        raise ValueError("trainable_layers()-method should be created when inheriting BaseModel")
-
-    def inputs(self):
-        raise ValueError("inputs()-method should be created when inheriting BaseModel")
-
-    def targets(self):
-        raise ValueError("targets()-method should be created when inheriting BaseModel")
-
-    def predictions(self):
-        raise ValueError("predictions()-method should be created when inheriting BaseModel")
 
     def _base_assertions(self):
         # List the assertions for the configuration
@@ -74,8 +38,7 @@ class BaseModel(metaclass=BaseModelMeta):
     def save(self, sess):
         saver = tf.train.Saver()
         mkpath(self.config.save_path)
-        #step = sess.run(self.config.global_step)
-        save_path = saver.save(sess, self.config.save_path)
+        saver.save(sess, self.config.save_path)
         print("{} saved in file: {}".format(self.config.model_name, self.config.save_path))
 
     def load(self, sess):

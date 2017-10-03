@@ -14,6 +14,16 @@ class TrainableModelMeta(type):
             instance = super().__call__(*args, **kwargs)
             instance._loss()
             instance._train()
+            error = lambda x, y, z: "The {} method should return {} not {}".format(x, y, z)
+
+            methods = [("targets()", instance.targets()),
+                      ("inputs()", instance.inputs()),
+                      ("predictions()", instance.predictions()),
+                      ("extend()", instance.extend())]
+            for name, result in methods:
+               assert(optionalTensor(result)), error(name,
+                                                     "a Tensor",
+                                                     type(result))
             return instance
 
 class AddMeta(metaclass=TrainableModelMeta): pass
@@ -27,6 +37,26 @@ class TrainableModel(resolve(BaseModel, AddMeta)):
         #Create the global step for monitoring the learning_rate and training.
         self.config = config
         self._trainable_assertions()
+
+    def inputs(self):
+        raise ValueError("inputs()-method should be created when inheriting TrainableModel")
+
+    def targets(self):
+        raise ValueError("targets()-method should be created when inheriting TrainableModel")
+
+    def predictions(self):
+        raise ValueError("predictions()-method should be created when inheriting TrainableModel")
+
+    def extend(self):
+        output = """
+                extend()-method should be created when inheriting TrainableModel
+
+                Info: This is the next to final layer in the model. Typically it is the
+                layer just before the final layer called the "logits".
+
+                This method is used to make the model easier to extend.
+                """
+        raise ValueError(output)
 
     def _loss(self):
         raise ValueError("_loss() function should be created when inheriting TrainableModel")
