@@ -98,7 +98,8 @@ class VGG(BaseModel):
         regex = "(" + "|".join(random_layers) + ")"
         names = lambda s: re.findall(regex, s)
         exclude = [v.name for v in tf.trainable_variables() if len(names(v.name)) >= 1]
-        slim.get_variables_to_restore(exclude=exclude)
+        self.all_vars = slim.get_variables_to_restore(exclude=exclude)
+
 
     def _config_assertions(self):
         # List the assertions for the configuation of the model
@@ -109,6 +110,10 @@ class VGG(BaseModel):
                       "use_initial_weights": boolean}
 
         self.config.assertions(assertions)
+
+    def initialize(self, sess):
+        saver = tf.train.Saver(self.all_vars)
+        saver.restore(sess, self.config.checkpoint_file)
 
 
 class VGG16(VGG):

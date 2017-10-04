@@ -26,9 +26,6 @@ class Trainer:
         # We reset the configuration to ensure all tensorflow variables are within the current graph
         self.config.reset_tf_variables()
 
-        if self.hardware:
-            self.hardware_metrics = HardwareMetrics(self.config)
-
         if self.run_tensorboard:
             command = "tensorboard --logdir={} --port={}".format(os.path.abspath(self.config.log_dir), self.port)
 
@@ -40,6 +37,9 @@ class Trainer:
         return self
 
     def start_session(self):
+        if self.hardware:
+            self.hardware_metrics = HardwareMetrics(self.config)
+
         self.session = tf.Session(graph=self.config.graph)
         self.session.run(tf.group(tf.global_variables_initializer(),
                                   tf.local_variables_initializer()))

@@ -83,6 +83,8 @@ class VGG19Old(BaseModel):
                 self.logits = self.fc_layer(self.fc8, 1000, config.num_classes, "logits")
                 self.preds = tf.nn.softmax(self.logits, name="prob")
 
+
+
     def trainable_layers(self):
         return set(self.trainable)
 

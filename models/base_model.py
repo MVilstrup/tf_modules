@@ -43,8 +43,8 @@ class BaseModel(metaclass=BaseModelMeta):
 
     def load(self, sess):
         saver = tf.train.Saver()
-        saver.restore(sess,  self.config.checkpoint_name)
-        print("{} loaded from file: {}".format(self.config.model_name, self.config.checkpoint_name))
+        saver.restore(sess,  self.config.checkpoint_file)
+        print("{} loaded from file: {}".format(self.config.model_name, self.config.checkpoint_file))
 
     def visualize(self):
         with tf.Session(graph=self.config.graph) as sess:
