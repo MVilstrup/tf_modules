@@ -52,6 +52,7 @@ def vgg_arg_scope(weight_decay=0.0005):
         with slim.arg_scope([slim.conv2d], padding='SAME') as arg_sc:
             return arg_sc
 
+
 class VGG(BaseModel):
     def __init__(self, config, name, url):
         self.model_path = 'model'
@@ -181,6 +182,7 @@ class VGG16(VGG):
 
                     self.last_layer = net
                     self.all_endpoints = end_points
+
 
 class VGG19(VGG):
     def __init__(self, config, inputs, should_be_extended=True, reuse=None, spatial_squeeze=True,
