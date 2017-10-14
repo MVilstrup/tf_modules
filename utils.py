@@ -124,7 +124,7 @@ def remove_if_bad(image):
 
 def mkpath(path):
     if os.path.exists(path):
-        return
+        return path
 
     path = os.path.abspath(path).split('/')
     for i, p in enumerate(path):
@@ -134,6 +134,7 @@ def mkpath(path):
         curr = "/".join(path[:i] + [p])
         if curr and not os.path.isdir(curr):
             os.mkdir(curr)
+    return '/'.join(path)
 
 def maybe_download_inpception(location_folder):
     checkpoint_name = '{}/inception_resnet_v2.ckpt'.format(location_folder)

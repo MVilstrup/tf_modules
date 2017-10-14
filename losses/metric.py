@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+from tf_modules.distances import pairwise_eucledian_distance
 
 def contrastive_loss(left, right, y, margin, extra=False, scope="constrastive_loss"):
     """
@@ -111,6 +111,21 @@ def triplet_loss(anchor, positive, negative, margin, extra=False, scope="triplet
             return loss
 
 
+def decov_loss(xs):
+    """Decov loss as described in https://arxiv.org/pdf/1511.06068.pdf
+    'Reducing Overfitting In Deep Networks by Decorrelating Representation'
+    """
+    x = tf.reshape(xs, [int(xs.get_shape()[0]), -1])
+    m = tf.reduce_mean(x, 0, True)
+    z = tf.expand_dims(x-m, 2)
+    corr = tf.reduce_mean(tf.matmul(z, tf.transpose(z, perm=[0,2,1])), 0)
+    corr_frob_sqr = tf.reduce_sum(tf.square(corr))
+    corr_diag_sqr = tf.reduce_sum(tf.square(tf.diag_part(corr)))
+    loss = 0.5*(corr_frob_sqr - corr_diag_sqr)
+    return loss
+
+
+
 def soft_triplet_loss(anchor, positive, negative, extra=True, scope="soft_triplet_loss"):
     """Loss for triplet networks as described in the paper:
         `Deep Metric Learning using Triplet Network
@@ -146,13 +161,13 @@ def soft_triplet_loss(anchor, positive, negative, extra=True, scope="soft_triple
             return loss
 
 
-def center_loss(embedding, labels, num_classes, alpha=0.1, extra=True, scope="center_loss"):
+def center_loss(features, labels, num_classes, decay=0.95, scope="center_loss"):
     """Center-Loss as described in the paper:
         `A Discriminative Feature Learning Approach for Deep Face Recognition
         <http://ydwen.github.io/papers/WenECCV16.pdf> by Wen et al.`
 
     Args:
-        embedding (tf.Tensor): features produced by the network
+        features (tf.Tensor): features produced by the network
         label     (tf.Tensor): ground-truth label for each feature
         num_classes     (int): number of different classes
         alpha         (float): learning rate for updating the centers
@@ -161,8 +176,8 @@ def center_loss(embedding, labels, num_classes, alpha=0.1, extra=True, scope="ce
     Returns:
         tf.Tensor: center loss
     """
-    with tf.name_scope(scope):
-        feature_amount = embedding.get_shape()[1]
+    with tf.variable_scope(scope):
+        feature_amount = features.get_shape()[1]
         centers = tf.get_variable('centers',
                                   [num_classes, feature_amount],
                                   dtype=tf.float32,
@@ -171,20 +186,132 @@ def center_loss(embedding, labels, num_classes, alpha=0.1, extra=True, scope="ce
 
         labels = tf.reshape(labels, [-1])
         centers_batch = tf.gather(centers, labels)
-        loss = tf.nn.l2_loss(embedding - centers_batch)
 
-        # Calculate the updates to the centers
-        diff = centers_batch - embedding
+        # We calculat the difference between the centers and the features
+        diff = (centers_batch - features)
 
+        # We calculate the amount of times we saw the centers as a regularizer
         unique_label, unique_idx, unique_count = tf.unique_with_counts(labels)
         appear_times = tf.gather(unique_count, unique_idx)
         appear_times = tf.reshape(appear_times, [-1, 1])
 
-        diff = alpha * (diff / tf.cast((1 + appear_times), tf.float32))
+        # We divide the difference by the amount of times we saw the center
+        diff = diff / tf.cast((1 + appear_times), tf.float32)
 
-        centers_update_op = tf.scatter_sub(centers, labels, diff)
+        # We add decay to decrease the update time
+        diff = (1 - decay) * diff
 
-        if extra:
-            return loss, centers_batch, centers_update_op
-        else:
-            return loss
+        # we scatter the centers to their new locations
+        centers = tf.scatter_sub(centers, labels, diff)
+
+        loss = tf.reduce_mean(tf.square(features - centers_batch))
+        return loss, centers
+
+def contrastive_center_loss(features, labels, num_classes, batch_size, decay=0.95, scope="center_loss"):
+    with tf.variable_scope(scope):
+        feature_amount = features.get_shape()[1]
+        centers = tf.get_variable('centers',
+                                  [num_classes, feature_amount],
+                                  dtype=tf.float32,
+                                  initializer=tf.random_normal_initializer(),
+                                  trainable=False)
+        labels = tf.reshape(labels, [-1])
+        centers_batch = tf.gather(centers, labels)
+
+        # We calculat the difference between the centers and the features
+        diff = (centers_batch - features)
+
+        # We add decay to decrease the update time
+        diff = (1 - decay) * diff
+
+        # we scatter the centers to their new locations
+        centers = tf.scatter_sub(centers, labels, diff)
+
+        # We compute the average distance between the centers
+        center_loss = tf.reduce_mean(tf.map_fn(lambda x: tf.square(x - centers), centers))
+
+        # the further away the centers are from each other, the smaller the loss
+        loss = tf.reduce_mean(tf.square(features - centers_batch)) / center_loss
+
+        return loss, centers
+
+def margin_center_loss(features, labels, num_classes,  scope="center_loss"):
+    with tf.variable_scope(scope):
+        feature_amount = features.get_shape()[1]
+        centers = tf.get_variable('centers',
+                                  [num_classes, feature_amount],
+                                  dtype=tf.float32,
+                                  initializer=tf.random_normal_initializer(),
+                                  trainable=True)
+        labels = tf.reshape(labels, [-1])
+        centers_batch = tf.gather(centers, labels)
+
+        _, unique_idx, _ = tf.unique_with_counts(labels)
+        mask_range = tf.range(tf.shape(unique_idx)[0])
+        indices = tf.pack([mask_range, unique_idx], axis=1)
+        mask = tf.gather_nd(tf.eye(int(features.get_shape()[0])), indices)
+
+        # Mask which takes all rows except current into account
+        inverted_mask = 1 - mask
+
+        # Calculate the distance from each vector to all the centers
+        negative = lambda x: x - centers_batch * inverted_mask
+        loss_func = lambda x: tf.maximum(0., tf.reduce_mean(margin + positive(x) - negative(x), 1))
+        losses = tf.map_fn(lambda x: loss_func(x), features)
+        loss = tf.reduce_mean(losses)
+        return loss, centers
+
+def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="center_loss"):
+    with tf.variable_scope(scope):
+        feature_amount = features.get_shape()[1]
+        centers = tf.get_variable('centers',
+                                  [num_classes, feature_amount],
+                                  dtype=tf.float32,
+                                  initializer=tf.random_normal_initializer(),
+                                  trainable=True)
+
+        labels = tf.reshape(labels, [-1])
+        batch_centers = tf.gather(centers, labels)
+        #print('batch_centers', batch_centers.get_shape())
+
+        dist_func = lambda x: tf.square(tf.exp(-tf.abs(x - batch_centers)))
+        distances = tf.map_fn(lambda x: tf.reduce_mean(dist_func(x), 1), features)
+        #print('distances', distances.get_shape())
+
+        mask = tf.eye(batch_size)
+        #print('mask', mask.get_shape())
+        inverted_mask = 1 - mask
+
+        delta = 0.1
+        losses = tf.reduce_sum(distances * mask, 1) / tf.reduce_sum(distances * inverted_mask, 1) + delta
+        #print('losses', losses.get_shape())
+
+        return tf.reduce_mean(losses), centers
+
+def square_dist(A):
+    r = tf.reduce_sum(A*A, 1)
+    # turn r into column vector
+    r = tf.reshape(r, [-1, 1])
+    return r - 2*tf.matmul(A, tf.transpose(A)) + tf.transpose(r)
+
+def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="center_loss"):
+    with tf.variable_scope(scope):
+        feature_amount = features.get_shape()[1]
+        centers = tf.get_variable('centers',
+                                  [num_classes, feature_amount],
+                                  dtype=tf.float32,
+                                  initializer=tf.random_normal_initializer(),
+                                  trainable=True)
+
+        labels = tf.reshape(labels, [-1])
+        batch_centers = tf.gather(centers, labels)
+
+        A = tf.diag(feature_amount)
+        zz = tf.reduce_sum(tf.multiply(A, tf.transpose(features)), 1, keep_dims=True) # KxN
+
+        kk = tf.exp(-square_dist(tf.transpose(zz)))  # NxN
+        kk = tf.matrix_set_diag(kk, 0)
+        Z_p = np.sum(kk, 0)  # N,
+        p_mn = kk / Z_p[np.newaxis, :]  # P(z_m | z_n), NxN
+        mask = yy[:, np.newaxis] == yy[np.newaxis, :]
+        p_n = np.sum(p_mn * mask, 0)  # 1xN
