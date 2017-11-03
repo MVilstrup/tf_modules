@@ -5,7 +5,6 @@ import os
 import subprocess
 import signal
 from tf_modules.metrics.hardware_metrics import HardwareMetrics
-import time
 
 class Trainer:
 
@@ -13,7 +12,10 @@ class Trainer:
         self.config = config
 
         if reset_log:
-            self.config.clear_log()
+            try:
+                self.config.clear_log()
+            except:
+                self.config.log_dir = "{}_1".format(self.config.log_dir)
 
         self.port = port
         self.current_epoch = 0
@@ -36,7 +38,10 @@ class Trainer:
                                                 preexec_fn=os.setsid)
         return self
 
-    def start_session(self):
+    def inspect_hardware(self):
+        self.hardware_metrics = HardwareMetrics(self.config)
+
+    def start_session(self, run_threads=False):
         if self.hardware:
             self.hardware_metrics = HardwareMetrics(self.config)
 
@@ -44,8 +49,9 @@ class Trainer:
         self.session.run(tf.group(tf.global_variables_initializer(),
                                   tf.local_variables_initializer()))
 
-        self.coord = tf.train.Coordinator()
-        self.threads = tf.train.start_queue_runners(self.session, self.coord)
+        if run_threads:
+            self.coord = tf.train.Coordinator()
+            self.threads = tf.train.start_queue_runners(self.session, self.coord)
 
         return self.session
 

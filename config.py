@@ -41,14 +41,14 @@ class Config(AssertionClass):
         tf.reset_default_graph()
 
 
-    def add_data(self, train_data=[], validation_data=[], test_data=[]):
+    def add_data(self, train_data=[], validation_data=[], test_data=[], multiplier=1):
         self.train_data = train_data
         self.validation_data = validation_data
         self.test_data = test_data
 
-        self.train_steps      = int(len(train_data) / self.batch_size) if self.batch_size > 0 else 0
-        self.validation_steps = int(len(validation_data) / self.batch_size) if self.batch_size > 0 else 0
-        self.test_steps       = int(len(test_data) / self.batch_size) if self.batch_size > 0 else 0
+        self.train_steps      = int(len(train_data)      * multiplier / self.batch_size) if self.batch_size > 0 else 0
+        self.validation_steps = int(len(validation_data) * multiplier / self.batch_size) if self.batch_size > 0 else 0
+        self.test_steps       = int(len(test_data)       * multiplier / self.batch_size) if self.batch_size > 0 else 0
 
         self.total_batches = self.train_steps * self.epoch_amount
 
