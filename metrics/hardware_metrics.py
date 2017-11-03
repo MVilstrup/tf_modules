@@ -162,7 +162,7 @@ class HardwareMetrics(object):
         with tf.name_scope('X-Metrics---TIME'):
             batch_time = tf.Variable(0, dtype=tf.float32, trainable=False)
             time_left = tf.Variable(0, dtype=tf.float32, trainable=False)
-            tf.summary.scalar('items_pr_second', batch_time, collections=self.collection)
+            tf.summary.scalar('Seconds_pr_Item', batch_time, collections=self.collection)
             tf.summary.scalar('Hours_Left', time_left, collections=self.collection)
 
             self.ops['time']['item'] = batch_time
