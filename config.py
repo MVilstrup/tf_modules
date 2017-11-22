@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
 import tensorflow as tf
-from tensorflow.contrib.framework.python.ops.variables import get_or_create_global_step
 
-import multiprocessing as mp
 import shutil
 import inspect
 
@@ -11,6 +9,8 @@ from tf_modules.utils import *
 from tf_modules.assertions.assertions import AssertionClass
 from random import randint
 import os
+
+get_or_create_global_step = tf.train.get_or_create_global_step
 
 class Config(AssertionClass):
 
