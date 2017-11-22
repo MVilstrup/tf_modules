@@ -274,6 +274,8 @@ def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="cente
         batch_centers = tf.gather(centers, labels)
         #print('batch_centers', batch_centers.get_shape())
 
+
+
         dist_func = lambda x: tf.square(tf.exp(-tf.abs(x - batch_centers)))
         distances = tf.map_fn(lambda x: tf.reduce_mean(dist_func(x), 1), features)
         #print('distances', distances.get_shape())
@@ -290,9 +292,13 @@ def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="cente
 
 def square_dist(A):
     r = tf.reduce_sum(A*A, 1)
-    # turn r into column vector
-    r = tf.reshape(r, [-1, 1])
+    r = tf.reshape(r, [-1, 1]) # turn r into column vector
     return r - 2*tf.matmul(A, tf.transpose(A)) + tf.transpose(r)
+
+def square_dist(A, B):
+    r = tf.reduce_sum(A*B, 1)
+    r = tf.reshape(r, [-1, 1]) # turn r into column vector
+    return r - 2*tf.matmul(A, tf.transpose(B)) + tf.transpose(r)
 
 def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="center_loss"):
     with tf.variable_scope(scope):
@@ -306,12 +312,11 @@ def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="cente
         labels = tf.reshape(labels, [-1])
         batch_centers = tf.gather(centers, labels)
 
-        A = tf.diag(feature_amount)
-        zz = tf.reduce_sum(tf.multiply(A, tf.transpose(features)), 1, keep_dims=True) # KxN
-
-        kk = tf.exp(-square_dist(tf.transpose(zz)))  # NxN
-        kk = tf.matrix_set_diag(kk, 0)
-        Z_p = np.sum(kk, 0)  # N,
-        p_mn = kk / Z_p[np.newaxis, :]  # P(z_m | z_n), NxN
-        mask = yy[:, np.newaxis] == yy[np.newaxis, :]
-        p_n = np.sum(p_mn * mask, 0)  # 1xN
+        def calculate(features, label):
+            dist = lambda x, y: tf.exp(-tf.square(x - y))
+            center = tf.gather(centers, label)
+            distance = tf.reduce_mean(dist(features - center))
+            mask = tf.cast(1 - tf.one_hot(label, num_classes), tf.bool)
+            contrast = tf.reduce_mean(tf.boolean_mask(dist(features - centers), mask), axis=1)
+            return distance / tf.reduce_sum(constrast)
+        
