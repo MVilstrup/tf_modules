@@ -1,43 +1,43 @@
 #!/usr/bin/python3
 
 import tensorflow as tf
-#from tensorflow.estimator import ModeKeys
+# from tensorflow.estimator import ModeKeys
 
 from tf_modules.utils import *
 from tf_modules.assertions.checks import (optionalStr,
-                                         optionalTensor,
-                                         tfVariable)
+                                          optionalTensor,
+                                          tfVariable)
 
 
 class Modes(object):
-  """Standard names for model modes.
+    """Standard names for model modes.
   The following standard keys are defined:
   * `TRAIN`: training mode.
   * `EVAL`: evaluation mode.
   * `PREDICT`: inference mode.
   * `EXTEND`: Extensions mode.
   """
-  TRAIN = 'train'
-  EVAL = 'eval'
-  PREDICT = 'pred'
-  EXTEND = 'extend'
+    TRAIN = 'train'
+    EVAL = 'eval'
+    PREDICT = 'pred'
+    EXTEND = 'extend'
 
 
 class BaseModelMeta(type):
     def __call__(cls, *args, **kwargs):
-        error = lambda x,y,z: "The {} method should return {} not {}".format(x, y, z)
+        error = lambda x, y, z: "The {} method should return {} not {}".format(x, y, z)
         instance = super().__call__(*args, **kwargs)
 
         methods = [("extend()", instance.extension_layer())]
         for name, result in methods:
-            assert(optionalTensor(result)), error(name, "a Tensor", type(result))
+            assert (optionalTensor(result)), error(name, "a Tensor", type(result))
 
         return instance
 
-class BaseModel(metaclass=BaseModelMeta):
 
+class BaseModel(metaclass=BaseModelMeta):
     def __init__(self, model_dir, config, params):
-        #Create the global step for monitoring the learning_rate and training.
+        # Create the global step for monitoring the learning_rate and training.
         self.config = config
         self._base_assertions()
         self._config_assertions()
@@ -53,11 +53,11 @@ class BaseModel(metaclass=BaseModelMeta):
         """
         raise ValueError(output)
 
-
     def evaluate(self, input_fn, steps=None, hooks=None, checkpoint_path=None, name=None):
         pass
 
-    def export_savedmodel(export_dir_base, serving_input_receiver_fn, assets_extra=None, as_text=False, checkpoint_path=None):
+    def export_savedmodel(export_dir_base, serving_input_receiver_fn, assets_extra=None, as_text=False,
+                          checkpoint_path=None):
         pass
 
     def predict(self, input_fn, predict_keys=None, hooks=None, checkpoint_path=None):
@@ -75,10 +75,10 @@ class BaseModel(metaclass=BaseModelMeta):
     def _base_assertions(self):
         pass
         ## List the assertions for the configuration
-        #assertions = {"save_path": optionalStr,
+        # assertions = {"save_path": optionalStr,
         #              "log_dir": optionalStr,
         #              "global_step": tfVariable}
-        #self.config.assertions(assertions)
+        # self.config.assertions(assertions)
 
     def _config_assertions(self):
         print("You can include configuration assertions to you model by defining a _config_assertions() method")
@@ -86,7 +86,7 @@ class BaseModel(metaclass=BaseModelMeta):
 
     def load(self, sess, checkpoint):
         saver = tf.train.Saver()
-        saver.restore(sess,  checkpoint)
+        saver.restore(sess, checkpoint)
         print("{} loaded from file: {}".format(self.config.model_name, checkpoint))
 
     def visualize(self):
@@ -95,5 +95,5 @@ class BaseModel(metaclass=BaseModelMeta):
             sess.run(tf.global_variables_initializer())
 
             print("Creating Graph")
-            tmp_def = rename_nodes(sess.graph_def, lambda s:"/".join(s.split('_', 1)))
+            tmp_def = rename_nodes(sess.graph_def, lambda s: "/".join(s.split('_', 1)))
             show_graph(tmp_def)

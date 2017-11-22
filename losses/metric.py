@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tf_modules.distances import pairwise_eucledian_distance
 
+
 def contrastive_loss(left, right, y, margin, extra=False, scope="constrastive_loss"):
     """
     Loss for Siamese networks as described in the paper:
@@ -117,13 +118,12 @@ def decov_loss(xs):
     """
     x = tf.reshape(xs, [int(xs.get_shape()[0]), -1])
     m = tf.reduce_mean(x, 0, True)
-    z = tf.expand_dims(x-m, 2)
-    corr = tf.reduce_mean(tf.matmul(z, tf.transpose(z, perm=[0,2,1])), 0)
+    z = tf.expand_dims(x - m, 2)
+    corr = tf.reduce_mean(tf.matmul(z, tf.transpose(z, perm=[0, 2, 1])), 0)
     corr_frob_sqr = tf.reduce_sum(tf.square(corr))
     corr_diag_sqr = tf.reduce_sum(tf.square(tf.diag_part(corr)))
-    loss = 0.5*(corr_frob_sqr - corr_diag_sqr)
+    loss = 0.5 * (corr_frob_sqr - corr_diag_sqr)
     return loss
-
 
 
 def soft_triplet_loss(anchor, positive, negative, extra=True, scope="soft_triplet_loss"):
@@ -207,6 +207,7 @@ def center_loss(features, labels, num_classes, decay=0.95, scope="center_loss"):
         loss = tf.reduce_mean(tf.square(features - centers_batch))
         return loss, centers
 
+
 def contrastive_center_loss(features, labels, num_classes, batch_size, decay=0.95, scope="center_loss"):
     with tf.variable_scope(scope):
         feature_amount = features.get_shape()[1]
@@ -235,7 +236,8 @@ def contrastive_center_loss(features, labels, num_classes, batch_size, decay=0.9
 
         return loss, centers
 
-def margin_center_loss(features, labels, num_classes,  scope="center_loss"):
+
+def margin_center_loss(features, labels, num_classes, scope="center_loss"):
     with tf.variable_scope(scope):
         feature_amount = features.get_shape()[1]
         centers = tf.get_variable('centers',
@@ -261,6 +263,7 @@ def margin_center_loss(features, labels, num_classes,  scope="center_loss"):
         loss = tf.reduce_mean(losses)
         return loss, centers
 
+
 def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="center_loss"):
     with tf.variable_scope(scope):
         feature_amount = features.get_shape()[1]
@@ -272,33 +275,36 @@ def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="cente
 
         labels = tf.reshape(labels, [-1])
         batch_centers = tf.gather(centers, labels)
-        #print('batch_centers', batch_centers.get_shape())
+        # print('batch_centers', batch_centers.get_shape())
 
 
 
         dist_func = lambda x: tf.square(tf.exp(-tf.abs(x - batch_centers)))
         distances = tf.map_fn(lambda x: tf.reduce_mean(dist_func(x), 1), features)
-        #print('distances', distances.get_shape())
+        # print('distances', distances.get_shape())
 
         mask = tf.eye(batch_size)
-        #print('mask', mask.get_shape())
+        # print('mask', mask.get_shape())
         inverted_mask = 1 - mask
 
         delta = 0.1
         losses = tf.reduce_sum(distances * mask, 1) / tf.reduce_sum(distances * inverted_mask, 1) + delta
-        #print('losses', losses.get_shape())
+        # print('losses', losses.get_shape())
 
         return tf.reduce_mean(losses), centers
 
+
 def square_dist(A):
-    r = tf.reduce_sum(A*A, 1)
-    r = tf.reshape(r, [-1, 1]) # turn r into column vector
-    return r - 2*tf.matmul(A, tf.transpose(A)) + tf.transpose(r)
+    r = tf.reduce_sum(A * A, 1)
+    r = tf.reshape(r, [-1, 1])  # turn r into column vector
+    return r - 2 * tf.matmul(A, tf.transpose(A)) + tf.transpose(r)
+
 
 def square_dist(A, B):
-    r = tf.reduce_sum(A*B, 1)
-    r = tf.reshape(r, [-1, 1]) # turn r into column vector
-    return r - 2*tf.matmul(A, tf.transpose(B)) + tf.transpose(r)
+    r = tf.reduce_sum(A * B, 1)
+    r = tf.reshape(r, [-1, 1])  # turn r into column vector
+    return r - 2 * tf.matmul(A, tf.transpose(B)) + tf.transpose(r)
+
 
 def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="center_loss"):
     with tf.variable_scope(scope):
@@ -319,4 +325,3 @@ def NCA_loss(features, labels, num_classes, batch_size, decay=0.95, scope="cente
             mask = tf.cast(1 - tf.one_hot(label, num_classes), tf.bool)
             contrast = tf.reduce_mean(tf.boolean_mask(dist(features - centers), mask), axis=1)
             return distance / tf.reduce_sum(constrast)
-        
