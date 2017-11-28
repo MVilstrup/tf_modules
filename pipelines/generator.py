@@ -2,8 +2,8 @@ import random
 import numpy as np
 import tensorflow as tf
 from typing import Tuple
-NPTuple = Tuple[np.ndarray]
 
+NPTuple = Tuple[np.ndarray]
 
 class Generator:
     def __init__(self, config: object, distribution: list = None):

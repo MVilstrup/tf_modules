@@ -2,15 +2,15 @@
 from __future__ import absolute_import, division, print_function
 import tensorflow as tf
 import numpy as np
-from IPython.display import clear_output, Image, display, HTML
-import matplotlib
+from IPython.display import display, HTML
 import matplotlib.pyplot as plt
 import imghdr
 from scipy.misc import imread
 from subprocess import call
 import os
 
-def strip_consts(graph_def, max_const_size=32):
+
+def strip_consts(graph_def, max_const_size: int = 32):
     """Strip large constant values from graph_def.
     Created by Alex Mordvintsev
     https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/tutorials/deepdream/deepdream.ipynb
@@ -24,11 +24,11 @@ def strip_consts(graph_def, max_const_size=32):
             tensor = n.attr['value'].tensor
             size = len(tensor.tensor_content)
             if size > max_const_size:
-                tensor.tensor_content = "<stripped %d bytes>"%size
+                tensor.tensor_content = "<stripped %d bytes>" % size
     return strip_def
 
 
-def rename_nodes(graph_def, rename_func):
+def rename_nodes(graph_def, rename_func: function):
     """
     Created by Alex Mordvintsev
     https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/tutorials/deepdream/deepdream.ipynb
@@ -40,20 +40,19 @@ def rename_nodes(graph_def, rename_func):
         n.MergeFrom(n0)
         n.name = rename_func(n.name)
         for i, s in enumerate(n.input):
-            n.input[i] = rename_func(s) if s[0]!='^' else '^'+rename_func(s[1:])
+            n.input[i] = rename_func(s) if s[0] != '^' else '^' + rename_func(s[1:])
     return res_def
 
 
-def show_graph(graph_def, max_const_size=32):
+def show_graph(graph_def, max_const_size=32) -> None:
     """Visualize TensorFlow graph.
     Created by Alex Mordvintsev
     https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/tutorials/deepdream/deepdream.ipynb
     """
 
-
     if hasattr(graph_def, 'as_graph_def'):
         graph_def = graph_def.as_graph_def()
-    #strip_def = strip_consts(graph_def, max_const_size=max_const_size)
+    strip_def = strip_consts(graph_def, max_const_size=max_const_size)
     code = """
         <script>
           function load() {{
@@ -64,7 +63,7 @@ def show_graph(graph_def, max_const_size=32):
         <div style="height:600px">
           <tf-graph-basic id="{id}"></tf-graph-basic>
         </div>
-    """.format(data=repr(str(graph_def)), id='graph'+str(np.random.rand()))
+    """.format(data=repr(str(graph_def)), id='graph' + str(np.random.rand()))
 
     iframe = """
         <iframe seamless style="width:800px;height:620px;border:0" srcdoc="{}"></iframe>
@@ -72,8 +71,8 @@ def show_graph(graph_def, max_const_size=32):
     display(HTML(iframe))
 
 
-def plot_decision_boundary(pred_func, X, y):
-    #from https://github.com/dennybritz/nn-from-scratch/blob/master/nn-from-scratch.ipynb
+def plot_decision_boundary(pred_func: function, X: np.ndarray, y: np.ndarray) -> None:
+    # from https://github.com/dennybritz/nn-from-scratch/blob/master/nn-from-scratch.ipynb
     # Set min and max values and give it some padding
     x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
     y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
@@ -85,20 +84,22 @@ def plot_decision_boundary(pred_func, X, y):
     yy = yy.astype('float32')
     xx = xx.astype('float32')
     # Predict the function value for the whole gid
-    Z = pred_func(np.c_[xx.ravel(), yy.ravel()])[:,0]
+    Z = pred_func(np.c_[xx.ravel(), yy.ravel()])[:, 0]
     Z = Z.reshape(xx.shape)
     # Plot the contour and training examples
     # plt.figure()
     plt.contourf(xx, yy, Z, cmap=plt.cm.RdBu)
     plt.scatter(X[:, 0], X[:, 1], s=40, c=-y, cmap=plt.cm.Spectral)
 
-def onehot(t, num_classes):
+
+def onehot(t: np.ndarray, num_classes: int) -> np.ndarray:
     out = np.zeros((t.shape[0], num_classes))
     for row, col in enumerate(t):
         out[row, col] = 1
     return out
 
-def import_file(full_path_to_module):
+
+def import_file(full_path_to_module: str) -> None:
     try:
         import os
         module_dir, module_file = os.path.split(full_path_to_module)
@@ -112,7 +113,8 @@ def import_file(full_path_to_module):
     except:
         raise ImportError
 
-def remove_if_bad(image):
+
+def remove_if_bad(image: str) -> bool:
     file_type = imghdr.what(image)
     if file_type == 'jpeg':
         if len(imread(image).shape) == 3:
@@ -122,7 +124,8 @@ def remove_if_bad(image):
     os.remove(image)
     return False
 
-def mkpath(path):
+
+def mkpath(path: str) -> str:
     if os.path.exists(path):
         return path
 
@@ -135,6 +138,7 @@ def mkpath(path):
         if curr and not os.path.isdir(curr):
             os.mkdir(curr)
     return '/'.join(path)
+
 
 def maybe_download_inpception(location_folder):
     checkpoint_name = '{}/inception_resnet_v2.ckpt'.format(location_folder)
@@ -150,16 +154,19 @@ def maybe_download_inpception(location_folder):
 
     return checkpoint_name
 
+
 def resolve(*classes):
     metaclass = tuple(set(type(cls) for cls in classes))
-    metaclass = metaclass[0] if len(metaclass)==1 \
-                else type("_".join(mcls.__name__ for mcls in metaclass), metaclass, {})   # class M_C
+    metaclass = metaclass[0] if len(metaclass) == 1 \
+        else type("_".join(mcls.__name__ for mcls in metaclass), metaclass, {})  # class M_C
     return metaclass("_".join(cls.__name__ for cls in classes), classes, {})
 
-def pretty(_str, space=20):
+
+def pretty(_str: str, space: int=20) -> str:
     return "\n" + _str + " " * (space - len(_str))
 
-def pretty_num(num):
+
+def pretty_num(num: float) -> str:
     if num < 1:
         return str(num).replace('.', ',')
 
@@ -176,5 +183,5 @@ def pretty_num(num):
 
 
 def detect_overridden(cls, obj):
-  common = cls.__dict__.keys() & obj.__class__.__dict__.keys()
-  diff = [m for m in common if cls.__dict__[m] != obj.__class__.__dict__[m]]
+    common = cls.__dict__.keys() & obj.__class__.__dict__.keys()
+    diff = [m for m in common if cls.__dict__[m] != obj.__class__.__dict__[m]]

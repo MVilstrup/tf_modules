@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-isTrue          = lambda x: x
-isFalse         = lambda x: not x
+isTrue          = lambda x: True if x else False
+isFalse         = lambda x: not isTrue(x)
 boolean         = lambda x: isinstance(x, bool) or (isinstance(x, int) and (x == 0 or x == 1))
 
 positiveFloat   = lambda x: isinstance(x, float) and x > 0.0

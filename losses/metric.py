@@ -1,5 +1,4 @@
 import tensorflow as tf
-from tf_modules.distances import pairwise_eucledian_distance
 
 
 def contrastive_loss(left, right, y, margin, extra=False, scope="constrastive_loss"):
@@ -98,7 +97,7 @@ def triplet_loss(anchor, positive, negative, margin, extra=False, scope="triplet
         tf.Tensor: triplet-loss as scalar (and optionally average_pos_dist, average_neg_dist)
     """
 
-    with tf.name_scope(scope):
+    def triplet(anchor, positive, negative, extra):
         d_pos = tf.reduce_sum(tf.square(anchor - positive), 1)
         d_neg = tf.reduce_sum(tf.square(anchor - negative), 1)
 
@@ -110,6 +109,18 @@ def triplet_loss(anchor, positive, negative, margin, extra=False, scope="triplet
             return loss, pos_dist, neg_dist
         else:
             return loss
+
+    with tf.name_scope(scope):
+        if extra:
+            loss1, pos_dist1, neg_dist1 = triplet(anchor, positive, negative, extra)
+            loss2, pos_dist2, neg_dist2 = triplet(positive, anchor, negative, extra)
+            return tf.cond(loss1 > loss2,
+                           lambda: (loss1, pos_dist1, neg_dist1),
+                           lambda: (loss2, pos_dist2, neg_dist2))
+        else:
+            loss1 = triplet(anchor, positive, negative, extra)
+            loss2 = triplet(positive, anchor, negative, extra)
+            return tf.maximum(loss1, loss2)
 
 
 def decov_loss(xs):
