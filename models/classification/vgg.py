@@ -146,14 +146,14 @@ class VGG16(VGG):
         self.fc_conv_padding = fc_conv_padding
 
         # Define the VGG16 model
-        self.build(inputs)
+        self.build(inputs, reuse)
 
         # Restore all the weights
         self.restore(should_be_extended)
 
-    def build(self, inputs):
+    def build(self, inputs, reuse):
         with slim.arg_scope(vgg_arg_scope()):
-            with tf.variable_scope(self.scope, 'vgg_16', [inputs]) as sc:
+            with tf.variable_scope(self.scope, 'vgg_16', [inputs], reuse=reuse) as sc:
                 end_points_collection = sc.name + '_end_points'
                 # Collect outputs for conv2d, fully_connected and max_pool2d.
                 with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
@@ -216,19 +216,18 @@ class VGG19(VGG):
         VGG.__init__(self, config, name='vgg_19', url='http://download.tensorflow.org/models/vgg_19_2016_08_28.tar.gz')
         self.spatial_squeeze = spatial_squeeze
         self.scope = scope
-        self.reuse = reuse
         self.inputs = inputs
         self.fc_conv_padding = fc_conv_padding
 
         # Define the VGG19 model
-        self.build(inputs)
+        self.build(inputs, reuse)
 
         # Restore all the weights
         self.restore(should_be_extended)
 
-    def build(self, inputs):
+    def build(self, inputs, reuse):
         with slim.arg_scope(vgg_arg_scope()):
-            with tf.variable_scope(self.scope, 'vgg_19', [inputs]) as sc:
+            with tf.variable_scope(self.scope, 'vgg_19', [inputs], reuse=reuse) as sc:
                 end_points_collection = sc.name + '_end_points'
 
                 # Collect outputs for conv2d, fully_connected and max_pool2d.

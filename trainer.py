@@ -5,10 +5,12 @@ import os
 import subprocess
 import signal
 from tf_modules.metrics.hardware_metrics import HardwareMetrics
+from tf_modules import Config
+from typing import Generator
 
 class Trainer:
 
-    def __init__(self, config, run_tensorboard=True, hardware=True, reset_log=False, port=6006):
+    def __init__(self, config: Config, run_tensorboard: bool=True, hardware: bool=True, reset_log: bool=False, port: int=6006):
         self.config = config
 
         if reset_log:
@@ -41,7 +43,7 @@ class Trainer:
     def inspect_hardware(self):
         self.hardware_metrics = HardwareMetrics(self.config)
 
-    def start_session(self, run_threads=False):
+    def start_session(self, run_threads=False) -> tf.Session:
         if self.hardware:
             self.hardware_metrics = HardwareMetrics(self.config)
 
@@ -75,23 +77,23 @@ class Trainer:
         if hasattr(self, "session"):
             self.session.close()
 
-    def epochs(self):
+    def epochs(self) -> Generator:
         for i in range(self.config.epoch_amount):
             self.current_epoch += 1
             yield i
 
-    def steps(self):
+    def steps(self) -> Generator:
         for i in range(self.config.total_batches):
             if i > 0 and i % self.config.train_steps == 0:
                 self.current_epoch += 1
 
             yield i
 
-    def batches_pr_epoch(self):
+    def batches_pr_epoch(self) -> Generator:
         for i in range(self.config.train_steps):
             yield i
 
-    def should_validate(self, step):
+    def should_validate(self, step) -> bool:
         if self.config.evaluate_at is None:
             return False
 
@@ -103,11 +105,11 @@ class Trainer:
 
         return validate
 
-    def should_save(self, step):
+    def should_save(self, step) -> bool:
         if self.config.save_at is None or self.config.save_at == 0:
             return False
 
         return step % self.config.save_at == 0
 
-    def new_epoch(self, step):
+    def new_epoch(self, step) -> bool:
         return step > 0 and step % self.config.train_steps == 0

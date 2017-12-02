@@ -12,10 +12,8 @@ from tf_modules.metrics.base_metrics import BaseMetrics
 
 
 class ClassificationMetrics(BaseMetrics):
-    def __init__(self, config, predictions, targets, top_five=True):
+    def __init__(self, config, predictions, targets):
         BaseMetrics.__init__(self, config)
-
-
 
         with tf.name_scope('Classification-Metrics'):
             self.predictions = tf.argmax(predictions, 1)
