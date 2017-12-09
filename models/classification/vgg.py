@@ -261,3 +261,4 @@ class VGG19(VGG):
                         end_points[sc.name + '/fc8'] = net
 
                     self.last_layer, self.end_points = net, end_points
+                    self.trainable_layers = slim.get_variables_to_restore()

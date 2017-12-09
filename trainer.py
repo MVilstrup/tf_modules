@@ -94,7 +94,7 @@ class Trainer:
             yield i
 
     def should_validate(self, step) -> bool:
-        if self.config.evaluate_at is None:
+        if self.config.evaluate_at is None or step == 0:
             return False
 
         validate = step % self.config.evaluate_at == 0

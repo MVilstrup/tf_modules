@@ -40,8 +40,16 @@ class Model:
         print("{} saved in file: {}".format(self.name, path))
 
     def load_ckpt(self, sess, checkpoint):
-        saver = tf.train.Saver()
-        saver.restore(sess, checkpoint)
+        if hasattr(self, "trainable_layers") and self.trainable_layers:
+            saver = tf.train.Saver(self.trainable_layers)
+        else:
+            saver = tf.train.Saver()
+
+        if 'ckpt' in checkpoint:
+            saver.restore(sess, checkpoint)
+        else:
+            saver.restore(sess, tf.train.latest_checkpoint(checkpoint))
+            
         print("{} loaded from file: {}".format(self.name, checkpoint))
 
     def load_graph(self, filename, show=False):

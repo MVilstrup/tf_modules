@@ -28,7 +28,7 @@ def strip_consts(graph_def, max_const_size: int = 32):
     return strip_def
 
 
-def rename_nodes(graph_def, rename_func: function):
+def rename_nodes(graph_def, rename_func):
     """
     Created by Alex Mordvintsev
     https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/tutorials/deepdream/deepdream.ipynb
@@ -71,7 +71,7 @@ def show_graph(graph_def, max_const_size=32) -> None:
     display(HTML(iframe))
 
 
-def plot_decision_boundary(pred_func: function, X: np.ndarray, y: np.ndarray) -> None:
+def plot_decision_boundary(pred_func, X: np.ndarray, y: np.ndarray) -> None:
     # from https://github.com/dennybritz/nn-from-scratch/blob/master/nn-from-scratch.ipynb
     # Set min and max values and give it some padding
     x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
